@@ -1,0 +1,10 @@
+from .auth_views import *  # noqa
+from .company_views import *  # noqa
+from .product_views import *  # noqa
+from .category_views import *  # noqa
+from .customer_views import *  # noqa
+from .supplier_views import *  # noqa
+from .sale_views import *  # noqa
+from .inventory_views import *  # noqa
+from .report_views import *  # noqa
+from .invitation_views import *  # noqa
