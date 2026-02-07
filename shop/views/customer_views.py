@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -10,6 +11,12 @@ from shop.models import Customer, Sale
 from shop.serializers import CustomerCreateSerializer, CustomerResponseSerializer
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="List all customers",
+    description="Get all customers ordered by last purchase date.",
+    responses={200: CustomerResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_customers(request):
@@ -18,6 +25,12 @@ def get_customers(request):
     return Response(CustomerResponseSerializer(customers, many=True).data)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Get customer by ID",
+    description="Get a specific customer's details.",
+    responses={200: CustomerResponseSerializer, 404: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_customer(request, customer_id):
@@ -28,6 +41,13 @@ def get_customer(request, customer_id):
     return Response(CustomerResponseSerializer(customer).data)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Create customer",
+    description="Create a new customer.",
+    request=CustomerCreateSerializer,
+    responses={201: CustomerResponseSerializer, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_customer(request):
@@ -51,6 +71,13 @@ def create_customer(request):
     return Response(CustomerResponseSerializer(customer).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Update customer",
+    description="Update an existing customer's information.",
+    request=CustomerCreateSerializer,
+    responses={200: CustomerResponseSerializer, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_customer(request, customer_id):
@@ -71,6 +98,12 @@ def update_customer(request, customer_id):
     return Response(CustomerResponseSerializer(customer).data)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Delete customer",
+    description="Delete a customer. Cannot delete if they have existing sales.",
+    responses={204: None, 400: None, 404: None},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_customer(request, customer_id):
@@ -89,6 +122,13 @@ def delete_customer(request, customer_id):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Search customers",
+    description="Search customers by name, phone, or email.",
+    parameters=[OpenApiParameter(name="query", type=str, description="Search query")],
+    responses={200: CustomerResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def search_customers(request):
@@ -102,6 +142,13 @@ def search_customers(request):
     return Response(CustomerResponseSerializer(customers, many=True).data)
 
 
+@extend_schema(
+    tags=["Customers"],
+    summary="Get top customers",
+    description="Get customers with highest total purchases.",
+    parameters=[OpenApiParameter(name="limit", type=int, description="Number of customers to return", default=10)],
+    responses={200: CustomerResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_top_customers(request):

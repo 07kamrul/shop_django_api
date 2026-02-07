@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -20,6 +21,12 @@ from shop.serializers import (
 from shop.services import AuthService
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Get current company",
+    description="Get the authenticated user's company details.",
+    responses={200: CompanyResponseSerializer, 401: None, 404: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_company(request):
@@ -32,6 +39,13 @@ def get_company(request):
     return Response(CompanyResponseSerializer(company).data)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Update company",
+    description="Update company details. Requires Owner role.",
+    request=CompanyUpdateSerializer,
+    responses={200: CompanyResponseSerializer, 401: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated, IsOwner])
 def update_company(request):
@@ -55,6 +69,12 @@ def update_company(request):
     return Response(CompanyResponseSerializer(company).data)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="List company users",
+    description="Get all users in the company. Requires Owner or Manager role.",
+    responses={200: CompanyUserResponseSerializer(many=True), 401: None, 403: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_users(request):
@@ -85,6 +105,13 @@ def get_users(request):
     return Response(CompanyUserResponseSerializer(data, many=True).data)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Search users",
+    description="Search users by email or name.",
+    parameters=[OpenApiParameter(name="query", type=str, description="Search query")],
+    responses={200: CompanyUserResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def search_users(request):
@@ -113,6 +140,13 @@ def search_users(request):
     return Response(CompanyUserResponseSerializer(data, many=True).data)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Invite user to company",
+    description="Invite a new user to join the company. Requires Owner role.",
+    request=InviteUserSerializer,
+    responses={200: CompanyUserResponseSerializer, 400: None, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsOwner])
 def invite_user(request):
@@ -148,6 +182,13 @@ def invite_user(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Update user role",
+    description="Change a user's role. Requires Owner role.",
+    request=UpdateUserRoleSerializer,
+    responses={200: None, 400: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated, IsOwner])
 def update_user_role(request, user_id):
@@ -182,6 +223,12 @@ def update_user_role(request, user_id):
     return Response({"message": "User role updated successfully."})
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Remove user from company",
+    description="Remove a user from the company. Requires Owner role.",
+    responses={200: None, 400: None, 401: None, 404: None},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated, IsOwner])
 def remove_user(request, user_id):
@@ -205,6 +252,12 @@ def remove_user(request, user_id):
     return Response({"message": "User removed from company successfully."})
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Activate user",
+    description="Activate a deactivated user. Requires Owner role.",
+    responses={200: None, 401: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated, IsOwner])
 def activate_user(request, user_id):
@@ -221,6 +274,12 @@ def activate_user(request, user_id):
     return Response({"message": "User activated successfully."})
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Deactivate user",
+    description="Deactivate a user. Requires Owner role.",
+    responses={200: None, 400: None, 401: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated, IsOwner])
 def deactivate_user(request, user_id):
@@ -243,6 +302,12 @@ def deactivate_user(request, user_id):
     return Response({"message": "User deactivated successfully."})
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Get pending users",
+    description="Get users not yet assigned to any company. Requires Owner role.",
+    responses={200: CompanyUserResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsOwner])
 def get_pending_users(request):
@@ -265,6 +330,13 @@ def get_pending_users(request):
     return Response(CompanyUserResponseSerializer(data, many=True).data)
 
 
+@extend_schema(
+    tags=["Company"],
+    summary="Link user to company",
+    description="Link an existing pending user to the company. Requires Owner role.",
+    request=LinkUserToCompanySerializer,
+    responses={200: CompanyUserResponseSerializer, 400: None, 401: None, 404: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsOwner])
 def link_user_to_company(request):
@@ -315,6 +387,13 @@ def link_user_to_company(request):
     return Response(CompanyUserResponseSerializer(resp).data)
 
 
+@extend_schema(
+    tags=["Company - Admin"],
+    summary="Create company",
+    description="Create a new company. Requires System Admin role.",
+    request=CreateCompanySerializer,
+    responses={200: CompanyResponseSerializer},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsSystemAdmin])
 def create_company(request):
@@ -335,6 +414,13 @@ def create_company(request):
     return Response(CompanyResponseSerializer(company).data)
 
 
+@extend_schema(
+    tags=["Company - Admin"],
+    summary="Assign user to company",
+    description="Assign a user to any company. Requires System Admin role.",
+    request=LinkUserToCompanySerializer,
+    responses={200: None, 400: None, 404: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsSystemAdmin])
 def assign_user_to_company(request, company_id):
@@ -369,6 +455,12 @@ def assign_user_to_company(request, company_id):
     return Response({"message": "User assigned to company successfully."})
 
 
+@extend_schema(
+    tags=["Company - Admin"],
+    summary="List all companies",
+    description="Get all companies in the system. Requires System Admin role.",
+    responses={200: CompanyResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsSystemAdmin])
 def get_all_companies(request):

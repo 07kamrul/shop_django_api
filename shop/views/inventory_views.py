@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,12 @@ from shop.serializers import (
 from shop.services import InventoryService
 
 
+@extend_schema(
+    tags=["Inventory"],
+    summary="Get inventory summary",
+    description="Get overall inventory statistics including stock values and alerts.",
+    responses={200: InventorySummarySerializer},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_inventory_summary(request):
@@ -20,6 +27,12 @@ def get_inventory_summary(request):
     return Response(InventorySummarySerializer(summary).data)
 
 
+@extend_schema(
+    tags=["Inventory"],
+    summary="Get stock alerts",
+    description="Get products with low or out of stock alerts.",
+    responses={200: StockAlertSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_stock_alerts(request):
@@ -28,6 +41,12 @@ def get_stock_alerts(request):
     return Response(StockAlertSerializer(alerts, many=True).data)
 
 
+@extend_schema(
+    tags=["Inventory"],
+    summary="Get inventory by category",
+    description="Get inventory breakdown by category.",
+    responses={200: CategoryInventorySerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_category_inventory(request):
@@ -36,6 +55,12 @@ def get_category_inventory(request):
     return Response(CategoryInventorySerializer(data, many=True).data)
 
 
+@extend_schema(
+    tags=["Inventory"],
+    summary="Get products needing restock",
+    description="Get products that need to be restocked.",
+    responses={200: ProductResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_products_needing_restock(request):
@@ -44,6 +69,16 @@ def get_products_needing_restock(request):
     return Response(ProductResponseSerializer(products, many=True).data)
 
 
+@extend_schema(
+    tags=["Inventory"],
+    summary="Get inventory turnover",
+    description="Calculate inventory turnover for a date range.",
+    parameters=[
+        OpenApiParameter(name="start_date", type=str, required=True, description="Start date (YYYY-MM-DD)"),
+        OpenApiParameter(name="end_date", type=str, required=True, description="End date (YYYY-MM-DD)"),
+    ],
+    responses={200: None, 400: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_inventory_turnover(request):

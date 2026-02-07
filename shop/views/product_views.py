@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from django.db.models import F
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -24,6 +25,12 @@ def _product_response(product):
     return ProductResponseSerializer(product).data
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="List all products",
+    description="Get all active products for the authenticated user's company.",
+    responses={200: ProductResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_products(request):
@@ -35,6 +42,12 @@ def get_products(request):
     return Response(ProductResponseSerializer(products, many=True).data)
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Get product by ID",
+    description="Get a specific product by its ID.",
+    responses={200: ProductResponseSerializer, 404: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_product(request, product_id):
@@ -49,6 +62,13 @@ def get_product(request, product_id):
     return Response(ProductResponseSerializer(product).data)
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Create product",
+    description="Create a new product in the company's inventory.",
+    request=ProductCreateSerializer,
+    responses={201: ProductResponseSerializer, 400: None, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_product(request):
@@ -85,6 +105,13 @@ def create_product(request):
     )
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Update product",
+    description="Update an existing product's information.",
+    request=ProductCreateSerializer,
+    responses={200: ProductResponseSerializer, 400: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_product(request, product_id):
@@ -115,6 +142,12 @@ def update_product(request, product_id):
     return Response(ProductResponseSerializer(product).data)
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Delete product",
+    description="Soft delete a product (marks as inactive).",
+    responses={204: None, 404: None},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_product(request, product_id):
@@ -128,6 +161,12 @@ def delete_product(request, product_id):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Get low stock products",
+    description="Get products with stock at or below minimum level.",
+    responses={200: ProductResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_low_stock_products(request):

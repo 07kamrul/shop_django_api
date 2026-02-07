@@ -3,6 +3,7 @@ from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -16,12 +17,25 @@ from shop.serializers import (
 )
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Test invitations API",
+    description="Test endpoint to verify the invitations API is working.",
+    responses={200: None},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def invitation_test(request):
     return Response("Invitations API is reaching the controller.")
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Create invitation",
+    description="Create a new invitation to join a company.",
+    request=CreateInvitationSerializer,
+    responses={200: InvitationResponseSerializer, 400: None, 403: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_invitation(request):
@@ -87,6 +101,13 @@ def create_invitation(request):
     return Response(InvitationResponseSerializer(resp).data)
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Accept invitation",
+    description="Accept an invitation using token and create a new user account.",
+    request=AcceptInvitationSerializer,
+    responses={200: None, 400: None},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def accept_invitation(request):
@@ -131,6 +152,12 @@ def accept_invitation(request):
     })
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Claim invitation",
+    description="Claim an invitation for an existing logged-in user.",
+    responses={200: None, 400: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def claim_invitation(request):
@@ -165,6 +192,12 @@ def claim_invitation(request):
     return Response({"message": "Invitation claimed successfully. Features enabled."})
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Get my invitations",
+    description="Get all pending invitations for the current user's email.",
+    responses={200: InvitationResponseSerializer(many=True), 401: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_my_invitations(request):
@@ -199,6 +232,12 @@ def get_my_invitations(request):
     return Response(result)
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Accept invitation by ID",
+    description="Accept an invitation by its ID for the logged-in user.",
+    responses={200: None, 400: None, 403: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def accept_invitation_by_id(request, invitation_id):
@@ -234,6 +273,12 @@ def accept_invitation_by_id(request, invitation_id):
     return Response({"message": "Invitation accepted successfully. Features enabled."})
 
 
+@extend_schema(
+    tags=["Invitations"],
+    summary="Reject invitation",
+    description="Reject an invitation by its ID.",
+    responses={200: None, 403: None, 404: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_invitation(request, invitation_id):

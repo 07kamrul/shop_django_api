@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -13,6 +14,13 @@ from shop.serializers import (
 from shop.services import AuthService
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Register new user",
+    description="Register a new user without company affiliation. User will be pending until linked to a company.",
+    request=SimpleRegisterSerializer,
+    responses={200: PendingUserResponseSerializer, 400: None},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def simple_register(request):
@@ -25,6 +33,13 @@ def simple_register(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="User login",
+    description="Authenticate user with email and password. Returns JWT tokens.",
+    request=LoginSerializer,
+    responses={200: AuthResponseSerializer, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login(request):
@@ -45,6 +60,13 @@ def login(request):
         )
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Refresh access token",
+    description="Get new access token using refresh token.",
+    request=RefreshTokenSerializer,
+    responses={200: AuthResponseSerializer, 400: None},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def refresh_token(request):
@@ -57,6 +79,12 @@ def refresh_token(request):
         return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Revoke user token",
+    description="Invalidate user's refresh token to log them out.",
+    responses={200: None, 400: None},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def revoke_token(request):

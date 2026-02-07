@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +12,16 @@ from shop.serializers import (
 from shop.services import SaleService
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="List all sales",
+    description="Get all sales with optional date filtering.",
+    parameters=[
+        OpenApiParameter(name="start_date", type=str, description="Start date filter (YYYY-MM-DD)"),
+        OpenApiParameter(name="end_date", type=str, description="End date filter (YYYY-MM-DD)"),
+    ],
+    responses={200: SaleResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_sales(request):
@@ -21,6 +32,12 @@ def get_sales(request):
     return Response(SaleResponseSerializer(sales, many=True).data)
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="Get sale by ID",
+    description="Get a specific sale with its items.",
+    responses={200: SaleResponseSerializer, 404: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_sale(request, sale_id):
@@ -31,6 +48,13 @@ def get_sale(request, sale_id):
     return Response(SaleResponseSerializer(sale).data)
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="Create sale",
+    description="Create a new sale with items. Automatically updates product stock.",
+    request=SaleCreateSerializer,
+    responses={201: SaleResponseSerializer, 400: None, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_sale(request):
@@ -51,6 +75,13 @@ def create_sale(request):
         )
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="Update sale",
+    description="Update an existing sale and its items.",
+    request=SaleUpdateSerializer,
+    responses={200: SaleResponseSerializer, 400: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_sale(request, sale_id):
@@ -73,6 +104,12 @@ def update_sale(request, sale_id):
         )
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="Delete sale",
+    description="Delete a sale and restore product stock.",
+    responses={204: None, 401: None, 404: None},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_sale(request, sale_id):
@@ -85,6 +122,12 @@ def delete_sale(request, sale_id):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
+@extend_schema(
+    tags=["Sales"],
+    summary="Get today's sales",
+    description="Get all sales from today.",
+    responses={200: SaleResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_today_sales(request):

@@ -1,4 +1,5 @@
 from django.urls import path
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -13,6 +14,11 @@ from shop.views import inventory_views
 from shop.views import report_views
 from shop.views import invitation_views
 
+@extend_schema(
+    tags=["API"],
+    summary="API Root",
+    description="Get available API endpoints.",
+)
 @api_view(["GET"])
 def api_root(request):
     return Response({

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -35,6 +36,12 @@ def _build_category_response(category, products_qs, all_categories):
     }
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="List all categories",
+    description="Get all categories with their subcategories and product counts.",
+    responses={200: CategoryResponseSerializer(many=True)},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_categories(request):
@@ -49,6 +56,12 @@ def get_categories(request):
     return Response(CategoryResponseSerializer(data, many=True).data)
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="Get category by ID",
+    description="Get a specific category with its subcategories.",
+    responses={200: CategoryResponseSerializer, 404: None},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_category(request, category_id):
@@ -89,6 +102,13 @@ def get_category(request, category_id):
     return Response(CategoryResponseSerializer(data).data)
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="Create category",
+    description="Create a new category or subcategory.",
+    request=CategoryCreateSerializer,
+    responses={201: CategoryResponseSerializer, 400: None, 401: None},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_category(request):
@@ -130,6 +150,13 @@ def create_category(request):
     return Response(CategoryResponseSerializer(resp).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="Update category",
+    description="Update an existing category's information.",
+    request=CategoryCreateSerializer,
+    responses={200: CategoryResponseSerializer, 400: None, 404: None},
+)
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_category(request, category_id):
@@ -186,6 +213,12 @@ def update_category(request, category_id):
     return Response(CategoryResponseSerializer(resp).data)
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="Delete category",
+    description="Delete a category. Cannot delete if it has products or subcategories.",
+    responses={204: None, 400: None, 404: None},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_category(request, category_id):

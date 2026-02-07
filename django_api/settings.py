@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "corsheaders",
     "rest_framework",
+    "drf_spectacular",
     "shop",
 ]
 
@@ -29,7 +30,18 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "django_api.urls"
 
-TEMPLATES = []
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+            ],
+        },
+    },
+]
 
 WSGI_APPLICATION = "django_api.wsgi.application"
 
@@ -57,6 +69,19 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
     ),
     "EXCEPTION_HANDLER": "shop.exception_handler.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Shop API",
+    "DESCRIPTION": "Django REST API for Shop Management",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SECURITY": [{"Bearer": []}],
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+    },
 }
 
 SIMPLE_JWT = {
