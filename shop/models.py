@@ -66,6 +66,39 @@ class Company(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# Branch
+# ---------------------------------------------------------------------------
+class Branch(models.Model):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="branches")
+    address = models.TextField(blank=True, default="")
+    phone = models.CharField(max_length=20, blank=True, default="")
+    email = models.EmailField(max_length=255, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    is_main = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        "User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_branches",
+    )
+
+    class Meta:
+        db_table = "branches"
+        indexes = [
+            models.Index(fields=["company"]),
+            models.Index(fields=["company", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} - {self.company.name}"
+
+
+# ---------------------------------------------------------------------------
 # User (custom auth model)
 # ---------------------------------------------------------------------------
 class User(AbstractBaseUser):
@@ -82,6 +115,14 @@ class User(AbstractBaseUser):
         null=True,
         blank=True,
         related_name="users",
+    )
+    branch = models.ForeignKey(
+        "Branch",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="users",
+        db_column="BranchId",
     )
     role = models.IntegerField(choices=UserRole.choices, default=UserRole.STAFF)
     password_hash = models.CharField(max_length=255, default="")

@@ -60,3 +60,13 @@ class IsOwnerOrSystemAdmin(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         return request.user.role in (UserRole.OWNER, UserRole.SYSTEM_ADMIN)
+
+
+class HasCompany(BasePermission):
+    """Check if user has a company assigned."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return user.company_id is not None

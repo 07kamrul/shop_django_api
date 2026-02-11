@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
+    Branch,
     Category,
     Company,
     Customer,
@@ -39,13 +40,17 @@ class AuthResponseSerializer(serializers.Serializer):
     id = serializers.CharField()
     email = serializers.EmailField()
     name = serializers.CharField()
-    company_id = serializers.CharField(allow_blank=True)
-    company_name = serializers.CharField(allow_blank=True)
+    company_id = serializers.CharField(allow_blank=True, allow_null=True)
+    company_name = serializers.CharField(allow_blank=True, allow_null=True)
+    branch_id = serializers.CharField(allow_blank=True, allow_null=True)
+    branch_name = serializers.CharField(allow_blank=True, allow_null=True)
     role = serializers.SerializerMethodField()
     phone = serializers.CharField(allow_null=True)
     token = serializers.CharField()
     refresh_token = serializers.CharField()
     token_expiry = serializers.DateTimeField()
+    has_company = serializers.BooleanField()
+    has_branch = serializers.BooleanField()
 
     def get_role(self, obj):
         return UserRole(obj["role"]).label
@@ -138,6 +143,41 @@ class CreateCompanySerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True, default="")
     currency = serializers.CharField(default="BDT")
     timezone = serializers.CharField(default="Asia/Dhaka")
+
+
+# ---------------------------------------------------------------------------
+# Branch
+# ---------------------------------------------------------------------------
+class BranchResponseSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source="company.name", read_only=True)
+
+    class Meta:
+        model = Branch
+        fields = [
+            "id", "name", "company_id", "company_name", "address",
+            "phone", "email", "is_active", "is_main", "created_at", "updated_at",
+        ]
+
+
+class BranchCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    address = serializers.CharField(required=False, allow_blank=True, default="")
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
+    is_main = serializers.BooleanField(default=False)
+
+
+class BranchUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    address = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
+    is_main = serializers.BooleanField(required=False)
+
+
+class SelectBranchSerializer(serializers.Serializer):
+    branch_id = serializers.CharField()
 
 
 # ---------------------------------------------------------------------------
