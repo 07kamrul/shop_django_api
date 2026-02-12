@@ -60,7 +60,7 @@ def update_company(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
 
-    for field in ["name", "description", "phone", "email", "address", "logo_url", "currency", "timezone"]:
+    for field in ["name", "business_type", "description", "phone", "email", "address", "logo_url", "currency", "country", "timezone"]:
         if field in data and data[field] is not None:
             setattr(company, field, data[field])
 
@@ -390,26 +390,34 @@ def link_user_to_company(request):
 @extend_schema(
     tags=["Company - Admin"],
     summary="Create company",
-    description="Create a new company. Requires System Admin role.",
+    description="Create a new company with owner. Public endpoint for registration.",
     request=CreateCompanySerializer,
     responses={200: CompanyResponseSerializer},
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, IsSystemAdmin])
+@permission_classes([])
 def create_company(request):
+    from rest_framework.permissions import AllowAny
+
     serializer = CreateCompanySerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
 
+    # Get owner from request if authenticated, otherwise null for now
+    owner = request.user if request.user.is_authenticated else None
+
     company = Company.objects.create(
         name=data["name"],
+        business_type=data.get("business_type"),
         description=data.get("description", ""),
         address=data.get("address", ""),
         phone=data.get("phone", ""),
         email=data.get("email", ""),
         currency=data.get("currency", "BDT"),
+        country=data.get("country"),
         timezone=data.get("timezone", "Asia/Dhaka"),
-        owner=request.user,
+        owner=owner,
+        status=0,  # PENDING
     )
     return Response(CompanyResponseSerializer(company).data)
 

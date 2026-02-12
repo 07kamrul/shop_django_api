@@ -36,26 +36,46 @@ class UserManager(BaseUserManager):
 # ---------------------------------------------------------------------------
 # Company
 # ---------------------------------------------------------------------------
+class CompanyStatus(models.IntegerChoices):
+    PENDING = 0, "Pending"
+    APPROVED = 1, "Approved"
+    REJECTED = 2, "Rejected"
+    SUSPENDED = 3, "Suspended"
+
+
 class Company(models.Model):
-    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=500, blank=True, default="")
-    phone = models.CharField(max_length=20, blank=True, default="")
-    email = models.EmailField(max_length=255, blank=True, default="")
-    address = models.TextField(blank=True, default="")
-    logo_url = models.CharField(max_length=255, blank=True, default="")
-    currency = models.CharField(max_length=50, default="BDT")
-    timezone = models.CharField(max_length=50, default="Asia/Dhaka")
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False, db_column="Id")
+    name = models.CharField(max_length=255, db_column="Name")
+    business_type = models.CharField(max_length=50, blank=True, null=True, db_column="BusinessType")
+    description = models.CharField(max_length=500, blank=True, default="", db_column="Description")
+    phone = models.CharField(max_length=20, blank=True, default="", db_column="Phone")
+    email = models.EmailField(max_length=255, blank=True, default="", db_column="Email")
+    address = models.TextField(blank=True, default="", db_column="Address")
+    logo_url = models.CharField(max_length=255, blank=True, default="", db_column="LogoUrl")
+    currency = models.CharField(max_length=50, default="BDT", db_column="Currency")
+    country = models.CharField(max_length=100, blank=True, null=True, db_column="Country")
+    timezone = models.CharField(max_length=50, default="Asia/Dhaka", db_column="Timezone")
+    is_active = models.BooleanField(default=True, db_column="IsActive")
+    status = models.IntegerField(choices=CompanyStatus.choices, default=CompanyStatus.PENDING, db_column="Status")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="CreatedAt")
+    updated_at = models.DateTimeField(auto_now=True, db_column="UpdatedAt")
     owner = models.ForeignKey(
         "User",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="owned_companies",
+        db_column="OwnerId"
     )
+    approved_by = models.ForeignKey(
+        "User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_companies",
+        db_column="ApprovedBy"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True, db_column="ApprovedAt")
 
     class Meta:
         db_table = "companies"
@@ -102,19 +122,20 @@ class Branch(models.Model):
 # User (custom auth model)
 # ---------------------------------------------------------------------------
 class User(AbstractBaseUser):
-    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(max_length=255, unique=True)
-    name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    is_active = models.IntegerField(default=0)
-    last_login_at = models.DateTimeField(blank=True, null=True)
-    shop_name = models.CharField(max_length=255, default="")
+    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False, db_column="Id")
+    email = models.EmailField(max_length=255, unique=True, db_column="Email")
+    name = models.CharField(max_length=255, db_column="Name")
+    phone = models.CharField(max_length=20, blank=True, null=True, db_column="Phone")
+    is_active = models.IntegerField(default=0, db_column="IsActive")
+    last_login = models.DateTimeField(blank=True, null=True, db_column="LastLoginAt")
+    shop_name = models.CharField(max_length=255, default="", db_column="ShopName")
     company = models.ForeignKey(
         Company,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="users",
+        db_column="CompanyId"
     )
     branch = models.ForeignKey(
         "Branch",
@@ -124,22 +145,18 @@ class User(AbstractBaseUser):
         related_name="users",
         db_column="BranchId",
     )
-    role = models.IntegerField(choices=UserRole.choices, default=UserRole.STAFF)
-    password_hash = models.CharField(max_length=255, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_email_verified = models.BooleanField(default=False)
-    refresh_token = models.CharField(max_length=255, blank=True, null=True)
-    refresh_token_expiry = models.DateTimeField(blank=True, null=True)
+    role = models.IntegerField(choices=UserRole.choices, default=UserRole.STAFF, db_column="Role")
+    password = models.CharField(max_length=255, default="", db_column="PasswordHash")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="CreatedAt")
+    is_email_verified = models.BooleanField(default=False, db_column="IsEmailVerified")
+    refresh_token = models.CharField(max_length=255, blank=True, null=True, db_column="RefreshToken")
+    refresh_token_expiry = models.DateTimeField(blank=True, null=True, db_column="RefreshTokenExpiryTime")
 
     # Required by AbstractBaseUser
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]
 
     objects = UserManager()
-
-    # AbstractBaseUser stores password in `password` field.
-    # We keep password_hash for parity with the .NET schema, but
-    # set_password / check_password use Django's `password` field.
 
     class Meta:
         db_table = "users"
@@ -150,6 +167,52 @@ class User(AbstractBaseUser):
     @property
     def is_active_bool(self):
         return self.is_active == 1
+
+
+# ---------------------------------------------------------------------------
+# Email Verification
+# ---------------------------------------------------------------------------
+class EmailVerification(models.Model):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False, db_column="Id")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_verifications", db_column="UserId")
+    email = models.EmailField(max_length=255, db_column="Email")
+    otp = models.CharField(max_length=6, db_column="Otp")
+    is_verified = models.BooleanField(default=False, db_column="IsVerified")
+    expires_at = models.DateTimeField(db_column="ExpiresAt")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="CreatedAt")
+
+    class Meta:
+        db_table = "email_verifications"
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email"]),
+        ]
+
+
+# ---------------------------------------------------------------------------
+# Audit Log
+# ---------------------------------------------------------------------------
+class AuditLog(models.Model):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid.uuid4, editable=False, db_column="Id")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs", db_column="UserId")
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs", db_column="CompanyId")
+    action = models.CharField(max_length=255, db_column="Action")
+    entity_type = models.CharField(max_length=100, null=True, blank=True, db_column="EntityType")
+    entity_id = models.CharField(max_length=36, null=True, blank=True, db_column="EntityId")
+    old_value = models.TextField(null=True, blank=True, db_column="OldValue")
+    new_value = models.TextField(null=True, blank=True, db_column="NewValue")
+    ip_address = models.CharField(max_length=45, null=True, blank=True, db_column="IpAddress")
+    user_agent = models.CharField(max_length=255, null=True, blank=True, db_column="UserAgent")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="CreatedAt")
+
+    class Meta:
+        db_table = "audit_logs"
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["company"]),
+            models.Index(fields=["action"]),
+            models.Index(fields=["created_at"]),
+        ]
 
 
 # ---------------------------------------------------------------------------

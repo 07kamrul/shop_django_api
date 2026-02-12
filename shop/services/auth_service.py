@@ -7,6 +7,7 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from shop.models import Branch, Company, User, UserRole
+from shop.services.audit_service import AuditService
 
 
 class AuthService:
@@ -18,25 +19,39 @@ class AuthService:
             raise ValueError("User with this email already exists.")
 
         password = data["password"]
+        company_id = data.get("company_id")
+
+        company = None
+        if company_id:
+            company = Company.objects.filter(pk=company_id).first()
+            if company:
+                # Update company owner
+                company.owner_id = None  # Will be set after user creation
+                company.save()
+
         user = User(
             email=email,
             name=data["name"],
-            shop_name="Pending",
+            shop_name=company.name if company else "Pending",
             phone=data.get("phone"),
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
-            role=UserRole.UNASSIGNED_USER,
-            company=None,
-            is_active=1,
+            role=UserRole.OWNER if company else UserRole.UNASSIGNED_USER,
+            company=company,
+            is_active=0 if company else 1,  # Pending approval if has company
         )
         user.set_password(password)
         user.save()
+
+        # Set company owner
+        if company:
+            company.owner = user
+            company.save()
 
         return {
             "id": user.id,
             "email": user.email,
             "name": user.name,
             "phone": user.phone,
-            "message": "Registration successful. You can now login to your dashboard.",
+            "message": "Registration successful. Waiting for admin approval." if company else "Registration successful. You can now login to your dashboard.",
         }
 
     @staticmethod
@@ -96,12 +111,16 @@ class AuthService:
         if user.branch_id:
             branch = Branch.objects.filter(pk=user.branch_id).first()
 
+        company_status = company.status if company else None
+        is_approved = company.status == 1 if company else False
+
         return {
             "id": str(user.id),
             "email": user.email,
             "name": user.name,
             "company_id": str(company.id) if company else "",
             "company_name": company.name if company else user.shop_name,
+            "company_status": company_status,
             "branch_id": str(branch.id) if branch else "",
             "branch_name": branch.name if branch else "",
             "role": user.role,
@@ -111,6 +130,7 @@ class AuthService:
             "token_expiry": datetime.now(timezone.utc) + timedelta(hours=1),
             "has_company": bool(company),
             "has_branch": bool(branch),
+            "is_approved": is_approved,
         }
 
     @staticmethod
@@ -152,12 +172,16 @@ class AuthService:
         if user.branch_id:
             branch = Branch.objects.filter(pk=user.branch_id).first()
 
+        company_status = company.status if company else None
+        is_approved = company.status == 1 if company else False
+
         return {
             "id": str(user.id),
             "email": user.email,
             "name": user.name,
             "company_id": str(company.id) if company else "",
             "company_name": company.name if company else user.shop_name,
+            "company_status": company_status,
             "branch_id": str(branch.id) if branch else "",
             "branch_name": branch.name if branch else "",
             "role": user.role,
@@ -167,6 +191,7 @@ class AuthService:
             "token_expiry": datetime.now(timezone.utc) + timedelta(hours=1),
             "has_company": bool(company),
             "has_branch": bool(branch),
+            "is_approved": is_approved,
         }
 
     @staticmethod
@@ -269,12 +294,16 @@ class AuthService:
         user.refresh_token_expiry = datetime.now(timezone.utc) + timedelta(days=7)
         user.save(update_fields=["refresh_token", "refresh_token_expiry"])
 
+        company_status = company.status if company else None
+        is_approved = company.status == 1 if company else False
+
         return {
             "id": str(user.id),
             "email": user.email,
             "name": user.name,
             "company_id": str(company.id) if company else "",
             "company_name": company.name if company else user.shop_name,
+            "company_status": company_status,
             "branch_id": str(branch.id) if branch else "",
             "branch_name": branch.name if branch else "",
             "role": user.role,
@@ -284,4 +313,5 @@ class AuthService:
             "token_expiry": datetime.now(timezone.utc) + timedelta(hours=1),
             "has_company": bool(company),
             "has_branch": bool(branch),
+            "is_approved": is_approved,
         }

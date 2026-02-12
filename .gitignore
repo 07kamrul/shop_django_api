@@ -4,3 +4,6 @@ django_api/CLAUDE.md
 shop/CLAUDE.md
 shop/services/CLAUDE.md
 shop/views/CLAUDE.md
+django_api/shop/migrations/CLAUDE.md
+django_api/shop/views/CLAUDE.md
+django_api/shop/services/CLAUDE.md

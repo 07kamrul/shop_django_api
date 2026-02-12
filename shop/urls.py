@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from shop.views import auth_views
+from shop.views import admin_views
 from shop.views import branch_views
 from shop.views import company_views
 from shop.views import product_views
@@ -47,6 +48,12 @@ urlpatterns = [
     path("auth/login", auth_views.login),
     path("auth/refresh-token", auth_views.refresh_token),
     path("auth/revoke-token", auth_views.revoke_token),
+
+    # Admin
+    path("admin/pending-companies", admin_views.get_pending_companies),
+    path("admin/approve-company", admin_views.approve_company),
+    path("admin/reject-company", admin_views.reject_company),
+    path("admin/suspend-company", admin_views.suspend_company),
 
     # Branches
     path("branches", branch_views.get_branches),

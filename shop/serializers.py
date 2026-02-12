@@ -5,6 +5,7 @@ from .models import (
     Branch,
     Category,
     Company,
+    CompanyStatus,
     Customer,
     Invitation,
     Product,
@@ -25,6 +26,7 @@ class SimpleRegisterSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=6)
     name = serializers.CharField()
     phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    company_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -42,6 +44,7 @@ class AuthResponseSerializer(serializers.Serializer):
     name = serializers.CharField()
     company_id = serializers.CharField(allow_blank=True, allow_null=True)
     company_name = serializers.CharField(allow_blank=True, allow_null=True)
+    company_status = serializers.IntegerField(allow_null=True)
     branch_id = serializers.CharField(allow_blank=True, allow_null=True)
     branch_name = serializers.CharField(allow_blank=True, allow_null=True)
     role = serializers.SerializerMethodField()
@@ -51,6 +54,7 @@ class AuthResponseSerializer(serializers.Serializer):
     token_expiry = serializers.DateTimeField()
     has_company = serializers.BooleanField()
     has_branch = serializers.BooleanField()
+    is_approved = serializers.BooleanField()
 
     def get_role(self, obj):
         return UserRole(obj["role"]).label
@@ -90,13 +94,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 # Company
 # ---------------------------------------------------------------------------
 class CompanyResponseSerializer(serializers.ModelSerializer):
+    status_display = serializers.SerializerMethodField()
+
     class Meta:
         model = Company
         fields = [
             "id", "name", "description", "phone", "email", "address",
-            "logo_url", "currency", "timezone", "is_active",
+            "logo_url", "currency", "timezone", "is_active", "status", "status_display",
             "created_at", "updated_at",
         ]
+
+    def get_status_display(self, obj):
+        return CompanyStatus(obj.status).label
 
 
 class CompanyUpdateSerializer(serializers.Serializer):
@@ -137,11 +146,13 @@ class LinkUserToCompanySerializer(serializers.Serializer):
 
 class CreateCompanySerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
+    business_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True, default="")
     address = serializers.CharField(required=False, allow_blank=True, default="")
     phone = serializers.CharField(required=False, allow_blank=True, default="")
     email = serializers.EmailField(required=False, allow_blank=True, default="")
     currency = serializers.CharField(default="BDT")
+    country = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     timezone = serializers.CharField(default="Asia/Dhaka")
 
 
